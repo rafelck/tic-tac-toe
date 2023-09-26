@@ -8,10 +8,7 @@ function Square({ value, onSquareClick }) {
   );
 }
 
-export default function Board() {
-  const [squares, setSquares] = useState(Array(9).fill(null));
-  const [xIsNext, setXIsNext] = useState(true);
-
+function Board({ xIsNext, squares, onPlay }) {
   function handleClick(i) {
     if (squares[i] || calculateWinner(squares)) {
       return;
@@ -21,8 +18,7 @@ export default function Board() {
 
     nextSquares[i] = xIsNext ? "X" : "O";
 
-    setSquares(nextSquares);
-    setXIsNext(!xIsNext);
+    onPlay(nextSquares);
   }
 
   const winner = calculateWinner(squares);
@@ -33,6 +29,7 @@ export default function Board() {
   } else {
     status = "Next Player:" + (xIsNext ? "X" : "O");
   }
+
   return (
     <>
       <div className="status">{status}</div>
@@ -52,6 +49,50 @@ export default function Board() {
   );
 }
 
+export default function Game() {
+  const [history, setHistory] = useState([Array(9).fill(null)]);
+  const [currentMove, setCurrentMove] = useState(0);
+  const xIsNext = currentMove % 2 === 0;
+  const currentSquare = history[currentMove];
+
+  function jumpTo(nextMove) {
+    setCurrentMove(nextMove);
+  }
+
+  function handlePlay(nextSquares) {
+    const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
+    setHistory(nextHistory);
+    setCurrentMove(nextHistory.length - 1);
+  }
+
+  const moves = history.map((squares, move) => {
+    let description = "";
+    if (move > 0) {
+      description = "Go to move #" + move;
+    } else {
+      description = "Go to game start";
+    }
+
+    return (
+      <li key={move}>
+        <button onClick={() => jumpTo(move)}>{description}</button>
+      </li>
+    );
+  });
+
+  return (
+    <div className="game">
+      <div className="game-board">
+        <Board xIsNext={xIsNext} squares={currentSquare} onPlay={handlePlay} />
+      </div>
+      <div className="game-info">
+        <h4>History</h4>
+        <ol>{moves}</ol>
+      </div>
+    </div>
+  );
+}
+
 function calculateWinner(squares) {
   const lines = [
     [0, 1, 2],
@@ -68,11 +109,9 @@ function calculateWinner(squares) {
 
   for (let i = 0; i < lines.length; i++) {
     const [a, b, c] = lines[i];
-    
     if (squares[a] == squares[b] && squares[b] == squares[c]) {
       return squares[a];
     }
   }
-
   return false;
 }
